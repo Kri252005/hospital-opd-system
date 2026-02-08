@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Hospital OPD</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+        }
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .stat-card h3 {
+            color: #7f8c8d;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        .stat-card .number {
+            font-size: 36px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .checkin-form {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .btn {
+            background: #3498db;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .btn:hover {
+            background: #2980b9;
+        }
+        .btn-success {
+            background: #27ae60;
+        }
+        .queue-table {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th {
+            background: #34495e;
+            color: white;
+            padding: 15px;
+            text-align: left;
+        }
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        tr:hover {
+            background: #f8f9fa;
+        }
+        .priority-high {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        .priority-medium {
+            color: #f39c12;
+        }
+        .priority-low {
+            color: #27ae60;
+        }
+        .emergency {
+            background: #e74c3c;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+        .alert {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏥 Hospital OPD Management - Admin Dashboard</h1>
+        <p>Real-time Patient Flow Management System</p>
+    </div>
+
+    <div class="container">
+        <!-- Statistics Cards -->
+        <div class="stats">
+            <div class="stat-card">
+                <h3>PATIENTS TODAY</h3>
+                <div class="number" id="total-patients">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>CURRENTLY WAITING</h3>
+                <div class="number" id="waiting-patients">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>AVERAGE WAIT TIME</h3>
+                <div class="number" id="avg-wait">0 min</div>
+            </div>
+            <div class="stat-card">
+                <h3>COMPLETED TODAY</h3>
+                <div class="number" id="completed-patients">0</div>
+            </div>
+        </div>
+
+        <!-- Check-in Form -->
+        <div class="checkin-form">
+            <h2>Patient Check-in</h2>
+            <div id="alert-message"></div>
+            
+            <form id="checkin-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Patient *</label>
+                        <select id="patient-id" required>
+                            <option value="">Select Patient</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Doctor *</label>
+                        <select id="doctor-id" required>
+                            <option value="">Select Doctor</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Visit Type *</label>
+                        <select id="visit-type" required>
+                            <option value="Walk-in">Walk-in</option>
+                            <option value="Appointment">Appointment</option>
+                            <option value="Follow-up">Follow-up</option>
+                            <option value="Emergency">Emergency</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Symptom Severity *</label>
+                        <select id="symptom-severity" required>
+                            <option value="Low">Low</option>
+                            <option value="Moderate" selected>Moderate</option>
+                            <option value="High">High</option>
+                            <option value="Critical">Critical</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="is-emergency"> 
+                        Emergency Case
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <label>Notes</label>
+                    <input type="text" id="notes" placeholder="Chief complaint...">
+                </div>
+                
+                <button type="submit" class="btn btn-success">✓ Check-in Patient</button>
+            </form>
+        </div>
+
+        <!-- Queue Table -->
+        <div class="queue-table">
+            <h2>Current Queue Status</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Token</th>
+                        <th>Patient Name</th>
+                        <th>Doctor</th>
+                        <th>Priority</th>
+                        <th>Position</th>
+                        <th>Est. Wait</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="queue-body">
+                    <tr>
+                        <td colspan="7" style="text-align: center;">No patients in queue</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5000/api';
+
+        // Load patients and doctors on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            loadPatients();
+            loadDoctors();
+            loadQueueStatus();
+            // Refresh queue every 5 seconds
+            setInterval(loadQueueStatus, 5000);
+        });
+
+        async function loadPatients() {
+            // For now, using sample data
+            // In production, fetch from /api/patients
+            const patients = [
+                {id: 1, name: 'Ramesh Verma'},
+                {id: 2, name: 'Sunita Singh'},
+                {id: 3, name: 'Mohan Gupta'},
+                {id: 4, name: 'Kavita Nair'},
+                {id: 5, name: 'Vijay Kumar'}
+            ];
+            
+            const select = document.getElementById('patient-id');
+            patients.forEach(p => {
+                const option = document.createElement('option');
+                option.value = p.id;
+                option.textContent = p.name;
+                select.appendChild(option);
+            });
+        }
+
+        async function loadDoctors() {
+            const doctors = [
+                {id: 1, name: 'Dr. Rajesh Kumar - Cardiology', dept_id: 1},
+                {id: 2, name: 'Dr. Priya Sharma - Cardiology', dept_id: 1},
+                {id: 3, name: 'Dr. Amit Patel - Orthopedics', dept_id: 2},
+                {id: 4, name: 'Dr. Sneha Reddy - General', dept_id: 3},
+                {id: 5, name: 'Dr. Arjun Menon - Pediatrics', dept_id: 4}
+            ];
+            
+            const select = document.getElementById('doctor-id');
+            doctors.forEach(d => {
+                const option = document.createElement('option');
+                option.value = d.id;
+                option.dataset.deptId = d.dept_id;
+                option.textContent = d.name;
+                select.appendChild(option);
+            });
+        }
+
+        async function loadQueueStatus() {
+            try {
+                // For demo, we'll fetch all waiting queue entries
+                // In production, you'd create a dedicated endpoint
+                const response = await fetch(`${API_URL}/doctor/1/queue`);
+                const data = await response.json();
+                
+                const tbody = document.getElementById('queue-body');
+                
+                if (data.queue && data.queue.length > 0) {
+                    tbody.innerHTML = data.queue.map(patient => `
+                        <tr>
+                            <td><strong>${patient.token_number}</strong></td>
+                            <td>${patient.first_name} ${patient.last_name}</td>
+                            <td>Dr. Rajesh Kumar</td>
+                            <td class="${getPriorityClass(patient.priority_score)}">
+                                ${patient.priority_score.toFixed(0)}
+                                ${patient.is_emergency ? '<span class="emergency">EMERGENCY</span>' : ''}
+                            </td>
+                            <td>#${patient.queue_position}</td>
+                            <td>${patient.estimated_wait_time} min</td>
+                            <td>Waiting</td>
+                        </tr>
+                    `).join('');
+                    
+                    // Update stats
+                    document.getElementById('waiting-patients').textContent = data.total_waiting;
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No patients in queue</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error loading queue:', error);
+            }
+        }
+
+        function getPriorityClass(score) {
+            if (score >= 60) return 'priority-high';
+            if (score >= 30) return 'priority-medium';
+            return 'priority-low';
+        }
+
+        document.getElementById('checkin-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const doctorSelect = document.getElementById('doctor-id');
+            const selectedOption = doctorSelect.options[doctorSelect.selectedIndex];
+            
+            const formData = {
+                patient_id: parseInt(document.getElementById('patient-id').value),
+                doctor_id: parseInt(document.getElementById('doctor-id').value),
+                department_id: parseInt(selectedOption.dataset.deptId),
+                visit_type: document.getElementById('visit-type').value,
+                symptom_severity: document.getElementById('symptom-severity').value,
+                is_emergency: document.getElementById('is-emergency').checked,
+                notes: document.getElementById('notes').value
+            };
+            
+            try {
+                const response = await fetch(`${API_URL}/patient/checkin`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(formData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert(`✓ ${result.message}`, 'success');
+                    document.getElementById('checkin-form').reset();
+                    loadQueueStatus(); // Refresh queue
+                } else {
+                    showAlert(`❌ Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showAlert(`❌ Error: ${error.message}`, 'error');
+            }
+        });
+
+        function showAlert(message, type) {
+            const alertDiv = document.getElementById('alert-message');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.textContent = message;
+            alertDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                alertDiv.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

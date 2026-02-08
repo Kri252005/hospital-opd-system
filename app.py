@@ -42,7 +42,21 @@ def index():
         <li>POST /api/doctor/&lt;doctor_id&gt;/start-consultation - Start consultation</li>
         <li>POST /api/doctor/&lt;doctor_id&gt;/end-consultation - End consultation</li>
     </ul>
+    <h3>Dashboards:</h3>
+    <ul>
+        <li><a href="/admin">Admin Dashboard</a></li>
+        <li><a href="/doctor/1">Doctor Dashboard (Dr. Rajesh Kumar)</a></li>
+    </ul>
     '''
+
+# ✅ ADD THESE ROUTES HERE (AFTER HOME ROUTE, BEFORE ERROR HANDLERS)
+@app.route('/admin')
+def admin_dashboard():
+    return render_template('admin_dashboard.html')
+
+@app.route('/doctor/<int:doctor_id>')
+def doctor_dashboard(doctor_id):
+    return render_template('doctor_dashboard.html', doctor_id=doctor_id)
 
 # Error handlers
 @app.errorhandler(404)
