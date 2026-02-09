@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Display - Hospital OPD</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            text-align: center;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header .date-time {
+            font-size: 1.5rem;
+            opacity: 0.9;
+        }
+        
+        .main-display {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+            padding: 2rem;
+            height: calc(100vh - 200px);
+        }
+        
+        .now-serving {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 3rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .now-serving h2 {
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            opacity: 0.8;
+        }
+        
+        .current-token {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            padding: 3rem 5rem;
+            border-radius: 20px;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .current-token .token-number {
+            font-size: 5rem;
+            font-weight: 900;
+            text-align: center;
+        }
+        
+        .current-token .doctor-name {
+            font-size: 1.5rem;
+            text-align: center;
+            margin-top: 1rem;
+            opacity: 0.9;
+        }
+        
+        .waiting-list {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            overflow-y: auto;
+        }
+        
+        .waiting-list h2 {
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .waiting-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid #4facfe;
+        }
+        
+        .waiting-item.emergency {
+            border-left-color: #f5576c;
+            background: rgba(245, 87, 108, 0.2);
+        }
+        
+        .waiting-item .token {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+        
+        .waiting-item .wait-time {
+            font-size: 1.2rem;
+            opacity: 0.8;
+        }
+        
+        .emergency-badge {
+            background: #f5576c;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .no-data {
+            text-align: center;
+            padding: 3rem;
+            opacity: 0.6;
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏥 Hospital OPD - Patient Display</h1>
+        <div class="date-time" id="datetime"></div>
+    </div>
+
+    <div class="main-display">
+        <div class="now-serving">
+            <h2>NOW SERVING</h2>
+            <div id="current-patient">
+                <div class="no-data">Waiting for next patient...</div>
+            </div>
+        </div>
+
+        <div class="waiting-list">
+            <h2>⏳ Next in Queue</h2>
+            <div id="waiting-queue">
+                <div class="no-data">No patients waiting</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5000/api';
+        const DOCTOR_ID = 1; // Can be made dynamic
+
+        // Update date/time
+        function updateDateTime() {
+            const now = new Date();
+            const options = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            };
+            document.getElementById('datetime').textContent = now.toLocaleDateString('en-US', options);
+        }
+        
+        setInterval(updateDateTime, 1000);
+        updateDateTime();
+
+        // Load patient data
+        async function loadDisplay() {
+            try {
+                // Load current patient
+                const currentResponse = await fetch(`${API_URL}/doctor/${DOCTOR_ID}/current`);
+                const currentData = await currentResponse.json();
+                
+                const currentDiv = document.getElementById('current-patient');
+                
+                if (currentData && currentData.queue_id) {
+                    currentDiv.innerHTML = `
+                        <div class="current-token">
+                            <div class="token-number">${currentData.token_number}</div>
+                            <div class="doctor-name">Dr. Rajesh Kumar - Cardiology</div>
+                        </div>
+                    `;
+                } else {
+                    currentDiv.innerHTML = '<div class="no-data">Waiting for next patient...</div>';
+                }
+                
+                // Load waiting queue
+                const queueResponse = await fetch(`${API_URL}/doctor/${DOCTOR_ID}/queue`);
+                const queueData = await queueResponse.json();
+                
+                const queueDiv = document.getElementById('waiting-queue');
+                
+                if (queueData.queue && queueData.queue.length > 0) {
+                    queueDiv.innerHTML = queueData.queue.slice(0, 5).map(patient => `
+                        <div class="waiting-item ${patient.is_emergency ? 'emergency' : ''}">
+                            <div>
+                                <div class="token">${patient.token_number}</div>
+                                ${patient.is_emergency ? '<span class="emergency-badge">EMERGENCY</span>' : ''}
+                            </div>
+                            <div class="wait-time">~${patient.estimated_wait_time} min</div>
+                        </div>
+                    `).join('');
+                } else {
+                    queueDiv.innerHTML = '<div class="no-data">No patients waiting</div>';
+                }
+            } catch (error) {
+                console.error('Error loading display:', error);
+            }
+        }
+
+        // Auto-refresh every 2 seconds
+        setInterval(loadDisplay, 2000);
+        loadDisplay();
+    </script>
+</body>
+</html>
